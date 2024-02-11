@@ -1,0 +1,65 @@
+# Phase 4 creates deployments for shard 1
+#
+# helm upgrade \
+#  --install \
+#  --values ./hack/kind-values-phase3.yaml \
+#  --namespace kcp-alpha \
+#  --create-namespace \
+#  alpha ./charts/kcp
+#
+fullnameOverride: proxy
+externalHostname: "kcp.dev.local"
+etcd:
+  enabled: false
+kcp:
+  enabled: false
+kcpFrontProxy:
+  v: 8
+  image: quay.io/mangirdas/kcp-sharded
+  tag: v2
+  additionalPathMappings:
+    - path: /services/edge-proxy
+      backend: https://virtualworkspaces.cluster-proxy.svc:8443
+      backend_server_ca: /etc/kcp/tls/ca/tls.crt
+      proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
+      proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key
+    - path: /services/cluster-proxy
+      backend: https://virtualworkspaces.cluster-proxy.svc:8443
+      backend_server_ca: /etc/kcp/tls/ca/tls.crt
+      proxy_client_cert: /etc/kcp-front-proxy/requestheader-client/tls.crt
+      proxy_client_key: /etc/kcp-front-proxy/requestheader-client/tls.key
+ # tag: main
+  enabled: true
+  ingress:
+    secret: proxy-front-proxy-cert
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: "nginx"
+      acme.cert-manager.io/http01-edit-in-place: "true"
+      # this is ingress-controller-specific and might need configuration
+      # depending on the ingress-controller in use.
+      nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+  tokenAuth:
+    enabled: true
+cache:
+  enabled: false
+certificates:
+  name: certs
+sharding:
+  enabled: false
+  isShard: false # set this to true for the all shards, false for the first (root) shard.
+  isRoot: true # set this to true for the first (root) shard, false for all other shards.
+  rootShardInternalHostname: "alpha.kcp-alpha.svc.cluster.local"
+caBundle:
+  enabled: false
+  configMapName: faros.sh
+  configMapKey: root-certs.pem
+oidc:
+  enabled: true
+  issuerUrl: https://idp.dev.local:6443
+  clientId: faros
+  groupClaim: groups
+  usernameClaim: email
+  usernamePrefix: faros-idp-
+  groupsPrefix: faros-idp-
+  caSecretName: dex-pki-ca

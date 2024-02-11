@@ -1,0 +1,49 @@
+# Phase 3 creates deployments for shard 1 (root)
+#
+# helm upgrade \
+#  --install \
+#  --values ./hack/kind-values-phase3.yaml \
+#  --namespace kcp-alpha \
+#  --create-namespace \
+#  alpha ./charts/kcp
+#
+fullnameOverride: alpha
+externalHostname: "kcp.dev.local"
+etcd:
+  enabled: true
+kcp:
+  externalLogicalClusterAdminFlag: true
+  #image: quay.io/mangirdas/kcp-sharded
+  #tag: v2
+  tag: main
+  enabled: true
+  v: 8
+  tokenAuth:
+    enabled: true
+  batteries:
+    - workspace-types
+    - metrics-viewer
+  extraFlags:
+  - --feature-gates=WorkspaceMounts=true
+  homeWorkspaces:
+    enabled: true
+externalCache:
+  enabled: true
+  cacheInternalHostname: "cache-cache.kcp-cache.svc"
+sharding:
+  enabled: true
+  isShard: false
+  isRoot: true
+caBundle:
+  enabled: false
+  configMapName: faros.sh
+  configMapKey: root-certs.pem
+oidc:
+  enabled: true
+  issuerUrl: https://idp.dev.local:6443
+  clientId: faros
+  groupClaim: groups
+  usernameClaim: email
+  usernamePrefix: faros-idp-
+  groupsPrefix: faros-idp-
+  caSecretName: dex-pki-ca
